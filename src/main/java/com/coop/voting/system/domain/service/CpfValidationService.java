@@ -1,5 +1,7 @@
 package com.coop.voting.system.domain.service;
 
+import com.coop.voting.system.domain.model.exception.BusinessException;
+import com.coop.voting.system.domain.util.HttpClientUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
