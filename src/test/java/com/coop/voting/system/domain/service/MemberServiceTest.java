@@ -1,6 +1,7 @@
 package com.coop.voting.system.domain.service;
 
 import com.coop.voting.system.domain.model.Member;
+import com.coop.voting.system.domain.model.exception.CpfInvalidException;
 import com.coop.voting.system.domain.model.exception.MemberAlreadyRegisteredException;
 import com.coop.voting.system.domain.repository.MemberRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +21,9 @@ class MemberServiceTest {
     @Mock
     private MemberRepository memberRepository;
 
+    @Mock
+    private CpfValidationService cpfValidationService;
+
     @InjectMocks
     private MemberService memberService;
 
@@ -34,6 +38,7 @@ class MemberServiceTest {
 
     @Test
     void testCreateMember_Success() throws Exception {
+        doNothing().when(cpfValidationService).checkCpfEligibility(validCpf);
         when(memberRepository.findByCpf(validCpf)).thenReturn(Optional.empty());
 
         Member member = Member.builder()
@@ -54,6 +59,7 @@ class MemberServiceTest {
 
     @Test
     void testCreateMember_ThrowsMemberAlreadyRegisteredException() throws Exception {
+        doNothing().when(cpfValidationService).checkCpfEligibility(validCpf);
         Member existingMember = new Member();
         existingMember.setCpf(existingCpf);
 
@@ -64,6 +70,17 @@ class MemberServiceTest {
         });
 
         assertEquals("Member already registered.", exception.getMessage());
+    }
+
+    @Test
+    void testCreateMember_CpfInvalid() throws Exception {
+        doThrow(new CpfInvalidException("The provided CPF is invalid.")).when(cpfValidationService).checkCpfEligibility(validCpf);
+
+        CpfInvalidException exception = assertThrows(CpfInvalidException.class, () -> {
+            memberService.createMember(validCpf, memberName);
+        });
+
+        assertEquals("The provided CPF is invalid.", exception.getMessage());
     }
 
 }

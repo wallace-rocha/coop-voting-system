@@ -32,8 +32,11 @@ public class VoteService {
     @Autowired
     private AgendaRepository agendaRepository;
 
+    @Autowired
+    private CpfValidationService cpfValidationService;
+
     @Transactional
-    public Vote castVote(UUID agendaId, String cpf, String choice) {
+    public Vote castVote(UUID agendaId, String cpf, String choice) throws Exception {
         logger.info("Starting vote process for agenda ID: {}, CPF: {}, Choice: {}", agendaId, cpf, choice);
 
         Agenda agenda = agendaRepository.findByAgendaId(agendaId)
@@ -67,9 +70,10 @@ public class VoteService {
         return choice;
     }
 
-    private void validateFields(Agenda agenda, String cpf) {
+    private void validateFields(Agenda agenda, String cpf) throws Exception {
         logger.info("Validating fields for CPF: {}", cpf);
 
+        cpfValidationService.checkCpfEligibility(cpf);
         checkOpenSession(agenda);
         checkMemberVoted(agenda, cpf);
     }

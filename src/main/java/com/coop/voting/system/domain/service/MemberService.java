@@ -20,11 +20,15 @@ public class MemberService {
     @Autowired
     MemberRepository memberRepository;
 
+    @Autowired
+    private CpfValidationService cpfValidationService;
+
     @Transactional
-    public Member createMember(String cpf, String name) {
+    public Member createMember(String cpf, String name) throws Exception {
         logger.info("Starting the creation of member with CPF: {}", cpf);
         try {
             logger.info("Checking eligibility of CPF: {}", cpf);
+            cpfValidationService.checkCpfEligibility(cpf);
 
             Optional<Member> memberExists = memberRepository.findByCpf(cpf);
             if (memberExists.isPresent()) {

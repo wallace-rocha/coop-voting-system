@@ -9,9 +9,7 @@ import com.coop.voting.system.domain.repository.MemberRepository;
 import com.coop.voting.system.domain.repository.VoteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -30,6 +28,9 @@ class VoteServiceTest {
 
     @Mock
     private AgendaRepository agendaRepository;
+
+    @Mock
+    private CpfValidationService cpfValidationService;
 
     @InjectMocks
     private VoteService voteService;
@@ -63,6 +64,7 @@ class VoteServiceTest {
         when(memberRepository.findByCpf(validCpf)).thenReturn(Optional.of(member));
         when(voteRepository.findByAgendaAndCpf(agenda, validCpf)).thenReturn(Optional.empty());
         when(voteRepository.save(any(Vote.class))).thenReturn(expectedVote);
+        doNothing().when(cpfValidationService).checkCpfEligibility(validCpf);
 
         Vote result = voteService.castVote(agendaId, validCpf, validChoice);
 
@@ -98,6 +100,8 @@ class VoteServiceTest {
         when(agendaRepository.findByAgendaId(agendaId)).thenReturn(Optional.of(agenda));
 
         when(memberRepository.findByCpf(validCpf)).thenReturn(Optional.of(new Member(validCpf, "Wallace Rocha", LocalDateTime.now())));
+
+        doNothing().when(cpfValidationService).checkCpfEligibility(validCpf);
 
         BusinessException exception = assertThrows(BusinessException.class, () -> {
             voteService.castVote(agendaId, validCpf, invalidChoice);
