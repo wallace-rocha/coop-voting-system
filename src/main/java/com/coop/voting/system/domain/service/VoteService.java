@@ -3,6 +3,7 @@ package com.coop.voting.system.domain.service;
 import com.coop.voting.system.domain.model.Agenda;
 import com.coop.voting.system.domain.model.Member;
 import com.coop.voting.system.domain.model.Vote;
+import com.coop.voting.system.domain.model.exception.*;
 import com.coop.voting.system.domain.repository.AgendaRepository;
 import com.coop.voting.system.domain.repository.MemberRepository;
 import com.coop.voting.system.domain.repository.VoteRepository;
@@ -28,10 +29,10 @@ public class VoteService {
     private AgendaRepository agendaRepository;
 
     @Transactional
-    public Vote castVote(UUID agendaId, String cpf, String choice) throws Exception {
+    public Vote castVote(UUID agendaId, String cpf, String choice) {
         Agenda agenda = agendaRepository.findByAgendaId(agendaId)
                 .orElseThrow(() -> {
-                    return new Exception("Agenda not found.");
+                    return new AgendaNotFoundException("Agenda not found.");
                 });
 
         choice = getChoiceFormatted(choice);
@@ -46,36 +47,36 @@ public class VoteService {
         return voteRepository.save(vote);
     }
 
-    protected String getChoiceFormatted(String choice) throws Exception {
+    protected String getChoiceFormatted(String choice) {
         choice = Normalizer.normalize(choice.toUpperCase(), Normalizer.Form.NFD);
         choice = choice.replaceAll("[^\\p{ASCII}]", "");
 
         if (!"SIM".equalsIgnoreCase(choice) && !"NAO".equalsIgnoreCase(choice)) {
-            throw new Exception("Invalid choice.");
+            throw new BusinessException("Invalid choice.");
         }
         return choice;
     }
 
-    private void validateFields(Agenda agenda, String cpf) throws Exception {
+    private void validateFields(Agenda agenda, String cpf) {
         checkOpenSession(agenda);
         checkMemberVoted(agenda, cpf);
     }
 
-    private void checkOpenSession(Agenda agenda) throws Exception {
+    private void checkOpenSession(Agenda agenda) {
         LocalDateTime now = LocalDateTime.now();
         if (agenda.getVotingStartDate() == null || agenda.getVotingEndDate() == null
                 || now.isBefore(agenda.getVotingStartDate()) || now.isAfter(agenda.getVotingEndDate())) {
-            throw new Exception("Voting session is not open or has already ended.");
+            throw new VotingSessionUnavailableException("Voting session is not open or has already ended.");
         }
     }
 
-    private void checkMemberVoted(Agenda agenda, String cpf) throws Exception {
+    private void checkMemberVoted(Agenda agenda, String cpf) {
         Member member = memberRepository.findByCpf(cpf)
-                .orElseThrow(() -> new Exception("Member not found."));
+                .orElseThrow(() -> new MemberNotFoundException("Member not found."));
 
         Optional<Vote> existingVote = voteRepository.findByAgendaAndCpf(agenda, cpf);
         if (existingVote.isPresent()) {
-            throw new Exception("Member already voted.");
+            throw new MemberAlreadyVotedException("Member already voted.");
         }
     }
 }
